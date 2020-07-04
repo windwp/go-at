@@ -1,50 +1,86 @@
 // Package main provides ...
 package app
 import (
-    // "github.com/nsf/termbox-go"
-	"github.com/jroimartin/gocui"
-)
+	// "github.com/nsf/termbox-go"
+	"log"
 
+	"github.com/jroimartin/gocui"
+	"github.com/windwp/go-at/pkg/model"
+)
 
 // Package main provides ...
 func Keybindings(g *gocui.Gui) error {
-	if err := g.SetKeybinding("side", gocui.KeyCtrlSpace, gocui.ModNone, nextView); err != nil {
-		return err
-	}
-	if err := g.SetKeybinding("main", gocui.KeyCtrlSpace, gocui.ModNone, nextView); err != nil {
-		return err
-	}
-	if err := g.SetKeybinding("side", 'j', gocui.ModNone, cursorDown); err != nil {
-		return err
-	}
-	if err := g.SetKeybinding("side", 'k', gocui.ModNone, cursorUp); err != nil {
-		return err
-	}
 
-	if err := g.SetKeybinding("side", 'x', gocui.ModNone, delItem); err != nil {
-		return err
-	}
+    bindings := []*model.Binding{
+        {
+            ViewName  :model.MAIN_VIEW,
+            Key: gocui.KeyCtrlSpace,
+            Handler:nextView,
+        },
+        {
+            ViewName  :model.SIDE_VIEW,
+            Key: gocui.KeyCtrlSpace,
+            Handler:nextView,
+        },
 
-	if err := g.SetKeybinding("", gocui.KeyCtrlC, gocui.ModNone, quit); err != nil {
-		return err
-	}
-	if err := g.SetKeybinding("side", gocui.KeyEnter, gocui.ModNone, getLine); err != nil {
-		return err
-	}
-	if err := g.SetKeybinding("msg", gocui.KeyEnter, gocui.ModNone, delMsg); err != nil {
-		return err
-	}
+        {
+            ViewName  :model.SIDE_VIEW,
+            Key:'j',
+            Handler:cursorDown,
+        },
+        {
+            ViewName  :model.SIDE_VIEW,
+            Key:'k',
+            Handler:cursorUp,
+        },
+        {
+            ViewName  :model.SIDE_VIEW,
+            Key:'a',
+            Handler:addProcess,
+        },
+        {
+            ViewName  :model.SIDE_VIEW,
+            Key:'x',
+            Handler:delItem,
+        },
 
-	// if err := g.SetKeybinding("main", gocui.KeyCtrlS, gocui.ModNone, saveMain); err != nil {
-	// 	return err
-	// }
-	// if err := g.SetKeybinding("main", gocui.KeyCtrlW, gocui.ModNone, saveVisualMain); err != nil {
-	// 	return err
-	// }
 
-	// if err := g.SetKeybinding("side", 'x', gocui.ModNone, updateView); err != nil {
-	// 	return err
-	// }
+        {
+            ViewName  :model.MSG_VIEW,
+            Key:'y',
+            Handler:okDialog,
+        },
+        {
+            ViewName  :model.MSG_VIEW,
+            Key:'n',
+            Handler:closeDialog,
+        },
+        {
+            ViewName  :model.MSG_VIEW,
+            Key:gocui.KeyEnter,
+            Handler:okDialog,
+        },
+
+
+        {
+            ViewName  :model.PROCESS_VIEW,
+            Key:'j',
+            Handler:cursorDown,
+        },
+        {
+            ViewName  :model.PROCESS_VIEW,
+            Key:'k',
+            Handler:cursorUp,
+        },
+    }
+
+    for _, b := range bindings {
+        if err := g.SetKeybinding(b.ViewName,b.Key,gocui.ModNone,b.Handler); err != nil {
+            log.Panicf("Error bindings: %s %s",b.ViewName,b.Key)
+            return err
+        }
+    
+    }
 	return nil
 }
 

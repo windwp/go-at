@@ -1,10 +1,18 @@
 package app
 
-
 import (
-    "fmt"
+	"fmt"
+	"log"
+
+	// "log"
 	"github.com/jroimartin/gocui"
+	"github.com/thoas/go-funk"
+	"github.com/windwp/go-at/pkg/gui"
+	"github.com/windwp/go-at/pkg/model"
+	"github.com/windwp/go-at/pkg/command"
 )
+
+var dialogHandler model.DialogHandler
 
 func nextView(g *gocui.Gui, v *gocui.View) error {
 	if v == nil || v.Name() == "side" {
@@ -18,10 +26,13 @@ func nextView(g *gocui.Gui, v *gocui.View) error {
 func cursorDown(g *gocui.Gui, v *gocui.View) error {
 	if v != nil {
 		cx, cy := v.Cursor()
-		if err := v.SetCursor(cx, cy+1); err != nil {
-			ox, oy := v.Origin()
-			if err := v.SetOrigin(ox, oy+1); err != nil {
-				return err
+		n, _ := v.Line(cy + 1)
+		if n != "" {
+			if err := v.SetCursor(cx, cy+1); err != nil {
+				ox, oy := v.Origin()
+				if err := v.SetOrigin(ox, oy+1); err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -41,36 +52,73 @@ func cursorUp(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func getLine(g *gocui.Gui, v *gocui.View) error {
-	var l string
-	var err error
+func addProcess(g *gocui.Gui, v *gocui.View) error {
 
-	_, cy := v.Cursor()
-	if l, err = v.Line(cy); err != nil {
-		l = ""
-	}
+    lProcess,_ :=command.GetListProcess()
+    litem:=make([]string, 0)
+    for _, l := range lProcess {
+        litem=append(litem,l.Name)
+    }
+    gui.SetupListProcess(g,litem)
 
-	maxX, maxY := g.Size()
-	if v, err := g.SetView("msg", maxX/2-30, maxY/2-20, maxX/2+30, maxY/2+20); err != nil {
-		if err != gocui.ErrUnknownView {
-			return err
+
+	return nil
+}
+
+func getSelectedItem(g *gocui.Gui) error {
+	v, err := g.View("side")
+	if err == nil {
+		text := getSelectedText(g, v)
+		for _, item := range config.ListProcess {
+			if item.Name == text {
+				config.SelectedProcess = &item
+				break
+			}
 		}
-		fmt.Fprintln(v, l)
-		if _, err := g.SetCurrentView("msg"); err != nil {
-			return err
+		if config.SelectedProcess != nil {
+			log.Print(config.SelectedProcess.Name)
 		}
 	}
 	return nil
 }
 
-func delMsg(g *gocui.Gui, v *gocui.View) error {
+func getSelectedText(g *gocui.Gui, v *gocui.View) string {
+	var l string
+	var err error
+	_, cy := v.Cursor()
+	if l, err = v.Line(cy); err != nil {
+		return ""
+	}
+	return l
 
-	if err := g.DeleteView("msg"); err != nil {
+}
+func deleteSeletedItem(g *gocui.Gui, v *gocui.View) error {
+	getSelectedItem(g)
+	if config.SelectedProcess != nil {
+		config.ListProcess = funk.Filter(config.ListProcess, func(item model.ProcessConfig) bool {
+			return item.Name != config.SelectedProcess.Name
+		}).([]model.ProcessConfig)
+		config.SelectedProcess = nil
+	}
+	return nil
+}
+
+func okDialog(g *gocui.Gui, v *gocui.View) error {
+	if dialogHandler != nil {
+		dialogHandler(g, v)
+	}
+	closeDialog(g, v)
+	return nil
+}
+
+func closeDialog(g *gocui.Gui, v *gocui.View) error {
+	if err := g.DeleteView(model.MSG_VIEW); err != nil {
 		return err
 	}
-	if _, err := g.SetCurrentView("side"); err != nil {
+	if _, err := g.SetCurrentView(model.SIDE_VIEW); err != nil {
 		return err
 	}
+	dialogHandler = nil
 	return nil
 }
 
@@ -78,27 +126,43 @@ func quit(g *gocui.Gui, v *gocui.View) error {
 	return gocui.ErrQuit
 }
 
-
-func delItem(g *gocui.Gui, v *gocui.View) error{
-    ShowDialog(g,v,"Are your sure you want to delete it",func(){
-        delMsg(g,v)
-    })
-
-    return nil
+func delItem(g *gocui.Gui, v *gocui.View) error {
+	text := getSelectedText(g, v)
+	if text != "" {
+		text = fmt.Sprintf("Delete %s ?", text)
+		ShowDialog(g, v, text, deleteSeletedItem)
+	}
+	return nil
 }
 
-func ShowDialog(g *gocui.Gui, v *gocui.View,message string,handler func()) error {
+func ShowDialog(
+	g *gocui.Gui,
+	v *gocui.View,
+	message string, handler model.DialogHandler,
+) error {
 	maxX, maxY := g.Size()
-	if v, err := g.SetView("msg", maxX/2-20, maxY/2-10, maxX/2+20, maxY/2); err != nil {
+	if v, err := g.SetView(model.MSG_VIEW, maxX/2-20, maxY/2-5, maxX/2+20, maxY/2); err != nil {
+		v.Title = "Dialog"
 		if err != gocui.ErrUnknownView {
+			log.Panic("stupi")
 			return err
 		}
 		fmt.Fprintln(v, message)
-		if _, err := g.SetCurrentView("msg"); err != nil {
+		fmt.Fprintln(v, " ")
+		text := "[Y]es  |   [N]o"
+		cursorX := 25 - len(text)
+		for i := 0; i < cursorX; i++ {
+			text = " " + text
+		}
+
+		v.SetCursor(cursorX+1, 2)
+		fmt.Fprintf(v, "%s\n", text)
+		if _, err := g.SetCurrentView(model.MSG_VIEW); err != nil {
+			log.Panic("can't set view")
 			return err
 		}
+		dialogHandler = handler
 	}
-    
-    return nil
-}
 
+	return nil
+}
