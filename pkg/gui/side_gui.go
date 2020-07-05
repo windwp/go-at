@@ -3,60 +3,144 @@ package gui
 
 import (
 	"fmt"
-	"log"
+
+	"github.com/fatih/color"
 	"github.com/jroimartin/gocui"
 	"github.com/windwp/go-at/pkg/model"
 )
 
-func SetUpSideGui(g *gocui.Gui,config *model.AppConfig) error {
+const menu_item_format = "%d %s\n"
+
+const side_width = 30
+
+func DrawSideGUi(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
 	_, maxY := g.Size()
-    log.Printf("Config setup %d",len(config.ListProcess))
-    v,_:=g.SetView(model.SIDE_VIEW, -1, -1, 30, maxY)
-    v.Clear()
-    log.Printf("Config length %d",len(config.ListProcess))
-    v.Highlight = true
-    v.SelBgColor = gocui.ColorGreen
-    v.SelFgColor = gocui.ColorBlack
-    for _, c := range config.ListProcess {
-        fmt.Fprintln(v, c.Name)
-    }
-    return nil
+	if isInit {
+		v, err := g.SetView(model.SIDE_VIEW, 0, 0, side_width, maxY-1)
+		if err != nil {
+			drawSide(g, v, config)
+		}
+	} else {
+		v, err := g.View(model.SIDE_VIEW)
+		if err == nil {
+			drawSide(g, v, config)
+		}
+	}
+	return nil
+
+}
+func drawSide(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
+	v.Clear()
+	v.Title = "Process list"
+	v.Highlight = true
+	v.SelBgColor = gocui.ColorGreen
+	v.SelFgColor = gocui.ColorBlack
+	for i, c := range config.ListProcess {
+		fmt.Fprintf(v, menu_item_format, i+1, c.Name)
+	}
+	return nil
 }
 
-func DrawSideGui(g *gocui.Gui,config *model.AppConfig) error{
-    if v,err :=g.View(model.SIDE_VIEW);err !=nil{
+func DrawMainGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
+	maxX, maxY := g.Size()
+	if isInit {
+		v, err := g.SetView(model.MAIN_VIEW, side_width+1, 0, maxX-1, maxY/4-1)
+		if err != nil {
+			drawMain(g, v, config)
+		}
+	} else {
+		v, err := g.View(model.MAIN_VIEW)
+		if err == nil {
+			drawMain(g, v, config)
+		}
+	}
+	return nil
+}
+
+func drawMain(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
+	v.Clear()
+	v.Title = "Main"
+	v.Highlight = false
+	v.Wrap = true
+	fmt.Fprintf(v, "Status : %s ",
+		ColoredStringDirect(config.Status, color.New(color.FgHiGreen, color.BgRed)))
+	fmt.Fprintf(v, "Message : %s", config.Message)
+	if _, err := g.SetCurrentView(model.SIDE_VIEW); err != nil {
+		return err
+	}
+	return nil
+}
+
+func DrawProcessGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
+	maxX, maxY := g.Size()
+	if isInit {
+		v, err := g.SetView(model.PROCESS_VIEW, side_width+1, maxY/4, maxX-1, maxY/2-1)
+		if err != nil {
+			drawProcess(g, v, config)
+		}
+	} else {
+		v, err := g.View(model.PROCESS_VIEW)
+		if err == nil {
+			drawProcess(g, v, config)
+		}
+
+	}
+	return nil
+}
+func drawProcess(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
+	v.Clear()
+	if config.SelectedProcess != nil {
+		v.Title = "Process " + config.SelectedProcess.Name
+		v.SelBgColor = gocui.ColorGreen
+		v.SelFgColor = gocui.ColorBlack
+		fmt.Fprintf(v, " PID : %d \n", config.SelectedProcess.Pid)
+		fmt.Fprintf(v, " Name : %s \n", config.SelectedProcess.Name)
+		fmt.Fprintf(v, " Title : %s \n", config.SelectedProcess.Title)
+	}
+	return nil
+}
+
+func DrawEditorGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
+	maxX, maxY := g.Size()
+	if isInit {
+		v, err := g.SetView(model.EDITOR_VIEW, side_width+1, maxY/2, maxX-1, maxY-1)
+		if err != nil {
+			drawEditor(g, v, config)
+		}
+	} else {
+		v, err := g.View(model.EDITOR_VIEW)
+		if err == nil {
+			drawEditor(g, v, config)
+		}
+	}
+	return nil
+}
+func drawEditor(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
+
+	v.Clear()
+	v.Editable = true
+	v.Wrap = true
+	if config.SelectedProcess != nil {
+		v.Title = "Text "
+		v.SelBgColor = gocui.ColorGreen
+		v.SelFgColor = gocui.ColorBlack
+		fmt.Fprintf(v, " Textku: %d \n", config.SelectedProcess.Pid)
+	}
+	return nil
+}
+
+func DrawSideGui(g *gocui.Gui, config *model.AppConfig) error {
+	if v, err := g.View(model.SIDE_VIEW); err != nil {
 		if err != gocui.ErrUnknownView {
 			return err
 		}
-        v.Clear()
+		v.Clear()
 		v.Highlight = true
 		v.SelBgColor = gocui.ColorGreen
 		v.SelFgColor = gocui.ColorBlack
 		for _, c := range config.ListProcess {
 			fmt.Fprintln(v, c.Name)
 		}
-    }
-
-    return nil
-}
-
-func SetupListProcess(g *gocui.Gui,listItem []string) error{
-    w:=40
-    h:=20
-	maxX, maxY := g.Size()
-	if v, err := g.SetView(model.PROCESS_VIEW, maxX/2-w/2, maxY/2-h/2, maxX/2+w/2, maxY/2+h/2); err != nil {
-		v.Title = "Dialog"
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-        for _, l := range listItem {
-            fmt.Fprintln(v,l)
-        }
-		if _, err := g.SetCurrentView(model.PROCESS_VIEW); err != nil {
-			log.Panic("can't set view")
-			return err
-		}
 	}
-
 	return nil
 }

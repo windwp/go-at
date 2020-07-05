@@ -17,29 +17,8 @@ var (
 	config *model.AppConfig
 )
 
-
 func layout(g *gocui.Gui) error {
-	// maxX, maxY := g.Size()
-	gui.SetUpSideGui(g, config)
-    gui.SetUpMainGui(g,config)
-	// if v, err := g.SetView("main", 30, -1, maxX, maxY); err != nil {
-	// 	if err != gocui.ErrUnknownView {
-	// 		return err
-	// 	}
-
-	// 	b, err := ioutil.ReadFile("main.go")
-	// 	if err != nil {
-	// 		panic(err)
-	// 	}
-
-	// 	fmt.Fprintf(v, "%s", b)
-	// 	v.Editable = true
-	// 	v.Wrap = true
-	// 	if _, err := g.SetCurrentView("side"); err != nil {
-	// 		return err
-	// 	}
-	// }
-
+	gui.SetUpGui(g, config)
 	return nil
 }
 
@@ -54,12 +33,11 @@ func main() {
 	log.Println("Start")
 
 	g, err := gocui.NewGui(gocui.OutputNormal)
-	config = app.Setup()
 
+	config = app.Setup()
+	g.Cursor = true
 	g.Highlight = true
 	g.SelFgColor = gocui.ColorRed
-	g.BgColor = gocui.ColorBlack
-	g.FgColor = gocui.ColorWhite
 
 	if err != nil {
 		g.Close()
@@ -67,9 +45,7 @@ func main() {
 		return
 	}
 	defer g.Close()
-	g.Cursor = true
 	g.SetManagerFunc(layout)
-
 	if err := app.Keybindings(g); err != nil {
 		log.Panicln(err)
 	}

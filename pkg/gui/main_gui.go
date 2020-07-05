@@ -1,31 +1,43 @@
 package gui
 
 import (
-	"fmt"
-	"log"
 	"github.com/jroimartin/gocui"
 	"github.com/windwp/go-at/pkg/model"
 )
 
-func SetUpMainGui(g *gocui.Gui,config *model.AppConfig) error {
-	maxX, maxY := g.Size()
-	if v, err := g.SetView(model.MAIN_VIEW, 30, -1, maxX, maxY); err != nil {
-        log.Println("Setup Main GUI")
-		if err != gocui.ErrUnknownView {
-			return err
-		}
-		v.Wrap = true
-
-        if _, err := g.SetCurrentView(model.SIDE_VIEW); err != nil {
-            return err
-        }
-        if config.SelectedProcess != nil{
-            fmt.Fprintln(v,config.SelectedProcess.Name)
-
-        }else{
-            fmt.Fprintf(v,"No item")
-        }
-	}
-    return nil
+func SetUpGui(g *gocui.Gui, config *model.AppConfig) error {
+	DrawSideGUi(g, config, true)
+	DrawMainGui(g, config, true)
+	DrawProcessGui(g, config, true)
+	DrawEditorGui(g, config, true)
+	return nil
 }
 
+func NextView(g *gocui.Gui, v *gocui.View) error {
+	cV := ""
+	if v == nil {
+		cV = model.SIDE_VIEW
+	} else {
+		cV = v.Name()
+	}
+
+	switch cV {
+	case model.SIDE_VIEW:
+		cV = model.MAIN_VIEW
+		break
+	case model.MAIN_VIEW:
+		cV = model.PROCESS_VIEW
+		break
+	case model.PROCESS_VIEW:
+		cV = model.EDITOR_VIEW
+		break
+	case model.EDITOR_VIEW:
+		cV = model.SIDE_VIEW
+		break
+	default:
+		cV = model.SIDE_VIEW
+		break
+	}
+	_, err := g.SetCurrentView(cV)
+	return err
+}
