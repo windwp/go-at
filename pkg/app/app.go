@@ -1,9 +1,10 @@
 package app
 
 import (
-	"fmt"
 	"log"
 
+	"github.com/thoas/go-funk"
+	"github.com/windwp/go-at/pkg/command"
 	"github.com/windwp/go-at/pkg/model"
 )
 
@@ -13,23 +14,18 @@ var config *model.AppConfig
 func Setup() *model.AppConfig {
 	pNum := 10
 	config = &model.AppConfig{
-		Status: "Idle",
-
+		Status:      "Idle",
 		Message:     "OK",
 		ListProcess: make([]model.ProcessConfig, 0, pNum),
 	}
-
-	for i := 0; i < pNum; i++ {
-		iP := model.ProcessConfig{
-			Pid:    i,
-			Name:   fmt.Sprintf("process %d", i),
-			Time:   10,
-			Text:   "test",
-			Points: make([]model.Point, 0),
-		}
-		config.ListProcess = append(config.ListProcess, iP)
+	jsonConfig, err := command.LoadJson()
+	if err == nil &&jsonConfig !=nil {
+		config = jsonConfig
 	}
-	config.SelectedProcess = &config.ListProcess[0]
+
+	if len(config.ListProcess) > 0 {
+		config.SelectedProcess = &config.ListProcess[0]
+	}
 	return config
 }
 
@@ -46,4 +42,17 @@ func addProcess(p *model.ProcessConfig) (*model.ProcessConfig, int) {
 		log.Printf(" length %d", len(config.ListProcess))
 	}
 	return p, len(config.ListProcess) - 1
+}
+
+func removeProcess(p *model.ProcessConfig) int {
+	if p != nil {
+		config.ListProcess = funk.Filter(
+			config.ListProcess,
+			func(item model.ProcessConfig) bool {
+				return item.Name != config.SelectedProcess.Name
+			},
+		).([]model.ProcessConfig)
+		config.SelectedProcess = nil
+	}
+	return 0
 }

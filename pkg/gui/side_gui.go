@@ -35,6 +35,9 @@ func drawSide(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
 	v.Highlight = true
 	v.SelBgColor = gocui.ColorGreen
 	v.SelFgColor = gocui.ColorBlack
+	if len(config.ListProcess) == 0 {
+		fmt.Fprintln(v, "No process")
+	}
 	for i, c := range config.ListProcess {
 		fmt.Fprintf(v, menu_item_format, i+1, c.Name)
 	}
@@ -90,7 +93,7 @@ func DrawProcessGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
 func drawProcess(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
 	v.Clear()
 	if config.SelectedProcess != nil {
-		v.Title = "Process " + config.SelectedProcess.Name
+		v.Title = "Process "
 		v.SelBgColor = gocui.ColorGreen
 		v.SelFgColor = gocui.ColorBlack
 		fmt.Fprintf(v, " PID : %d \n", config.SelectedProcess.Pid)
@@ -124,7 +127,11 @@ func drawEditor(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
 		v.Title = "Text "
 		v.SelBgColor = gocui.ColorGreen
 		v.SelFgColor = gocui.ColorBlack
-		fmt.Fprintf(v, " Textku: %d \n", config.SelectedProcess.Pid)
+
+		fmt.Fprintf(v, "%s \n", config.SelectedProcess.Text)
+		if len(config.SelectedProcess.Text) == 0 {
+			v.SetCursor(0, 0)
+		}
 	}
 	return nil
 }

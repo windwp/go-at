@@ -2,10 +2,10 @@ package app
 
 import (
 	"fmt"
+	"log"
 	"regexp"
 
 	"github.com/jroimartin/gocui"
-	"github.com/thoas/go-funk"
 	"github.com/windwp/go-at/pkg/command"
 	"github.com/windwp/go-at/pkg/gui"
 	"github.com/windwp/go-at/pkg/model"
@@ -14,6 +14,7 @@ import (
 var systemProcess []model.ProcessConfig
 
 func processMoveUp(g *gocui.Gui, v *gocui.View) error {
+	saveVisualData(g, v)
 	gui.CursorUp(g, v)
 	getSelectedProcess(g, v)
 	refereshGui(g)
@@ -21,12 +22,25 @@ func processMoveUp(g *gocui.Gui, v *gocui.View) error {
 }
 
 func processMoveDown(g *gocui.Gui, v *gocui.View) error {
+	saveVisualData(g, v)
 	gui.CursorDown(g, v)
 	getSelectedProcess(g, v)
 	refereshGui(g)
 	return nil
 }
 
+func saveVisualData(g *gocui.Gui, v *gocui.View) error {
+    if(config.SelectedProcess!=nil) {
+        config.SelectedProcess.Text="AAAAAAAAAAAA"
+    }
+	// ev, err := g.View(model.EDITOR_VIEW)
+	// if err == nil {
+	// 	vb := ev.ViewBuffer()
+        // config.SelectedProcess.Text = vb
+	// 	return nil
+	// }
+	return nil
+}
 func refereshGui(g *gocui.Gui) error {
 	gui.DrawSideGUi(g, config, false)
 	gui.DrawMainGui(g, config, false)
@@ -35,6 +49,7 @@ func refereshGui(g *gocui.Gui) error {
 	return nil
 }
 func addProcessAction(g *gocui.Gui, v *gocui.View) error {
+
 	config.ListProcess = append(config.ListProcess)
 	text := gui.GetSelectedText(g, v)
 	var selected *model.ProcessConfig
@@ -81,10 +96,8 @@ func getSelectedProcess(g *gocui.Gui, v *gocui.View) error {
 func deleteSeletedItem(g *gocui.Gui, v *gocui.View) error {
 	getSelectedProcess(g, v)
 	if config.SelectedProcess != nil {
-		config.ListProcess = funk.Filter(config.ListProcess, func(item model.ProcessConfig) bool {
-			return item.Name != config.SelectedProcess.Name
-		}).([]model.ProcessConfig)
-		config.SelectedProcess = nil
+		removeProcess(config.SelectedProcess)
+		refereshGui(g)
 	}
 	return nil
 }
@@ -96,4 +109,18 @@ func showDelProcess(g *gocui.Gui, v *gocui.View) error {
 		gui.ShowDialog(g, v, text, deleteSeletedItem)
 	}
 	return nil
+}
+
+func deleteEditor(g *gocui.Gui, v *gocui.View) error {
+	log.Println("aasdas")
+	if config.SelectedProcess != nil {
+		config.SelectedProcess.Text = ""
+		gui.DrawEditorGui(g, config, false)
+	}
+	return nil
+}
+
+func quit(g *gocui.Gui, v *gocui.View) error {
+	command.SaveJSON(config)
+	return gui.Quit(g, v)
 }

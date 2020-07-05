@@ -92,15 +92,21 @@ func Keybindings(g *gocui.Gui) error {
 			Key:      'q',
 			Handler:  gui.CloseMenuDialog,
 		},
+
 		{
 			ViewName: model.MENU_VIEW,
 			Key:      gocui.KeyEsc,
 			Handler:  gui.CloseMenuDialog,
 		},
+        {
+            ViewName: model.EDITOR_VIEW,
+            Key:      gocui.KeyCtrlSpace,
+            Handler:  deleteEditor,
+        },
 		{
 			ViewName: "",
 			Key:      gocui.KeyCtrlC,
-			Handler:  gui.Quit,
+			Handler:  quit,
 		},
 	}
 

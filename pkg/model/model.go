@@ -34,6 +34,8 @@ const EDITOR_VIEW = "editor"
 const MSG_VIEW = "msg"
 const MENU_VIEW = "menu"
 
+const DATA_PATH = "data.json"
+
 type DialogHandler func(g *gocui.Gui, v *gocui.View) error
 
 type ButtonWidget struct {

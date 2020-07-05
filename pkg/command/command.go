@@ -2,8 +2,12 @@
 package command
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io/ioutil"
 	"log"
+	"os"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -57,4 +61,36 @@ func getProcessInfomation(windowid string) (*model.ProcessConfig, error) {
 	}
 	return &result, nil
 
+}
+
+func SaveJSON(config *model.AppConfig) error {
+	configDir, _ := os.UserHomeDir()
+	path := configDir + "/" + model.DATA_PATH
+	result, err := json.Marshal(config)
+	if err == nil {
+        err:=ioutil.WriteFile(path, result, 0644)
+        if err != nil {
+            return err
+        }
+	} else {
+		return err
+	}
+	return nil
+}
+
+func LoadJson() (*model.AppConfig, error) {
+	configDir, _ := os.UserHomeDir()
+	path := configDir + "/" + model.DATA_PATH
+	jsonData, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, nil
+	}
+	var config model.AppConfig
+	err = json.Unmarshal(jsonData, &config)
+
+	if err == nil {
+		return &config, nil
+	}
+    os.Remove(path)
+	return nil, errors.New("Json error")
 }
