@@ -9,7 +9,9 @@ import (
 	"log"
 	"os"
 
+
 	// "github.com/nsf/termbox-go"
+    "github.com/go-vgo/robotgo"
 	"github.com/jroimartin/gocui"
 	"github.com/windwp/go-at/pkg/app"
 	"github.com/windwp/go-at/pkg/command"
@@ -32,9 +34,12 @@ func onKill(){
 	go func() {
 		<-c
 		log.Println("\r- Ctrl+C pressed in Terminal")
-        command.SaveJSON(config)
+        saveAppData()
 		os.Exit(0)
 	}()
+}
+func saveAppData(){
+    command.SaveJSON(config)
 }
 
 func main() {
@@ -43,16 +48,17 @@ func main() {
 		fmt.Println("file log not exist")
 	}
 	defer f.Close()
+    defer saveAppData()
 	log.SetOutput(f)
 	log.Println("Start ==")
-     onKill()
+    onKill()
 	g, err := gocui.NewGui(gocui.OutputNormal)
-
 	config = app.Setup()
+    robotgo.GetMousePos()
 	g.Cursor = true
 	g.Highlight = true
 	g.SelFgColor = gocui.ColorRed
-
+    g.InputEsc=true
 	if err != nil {
 		g.Close()
 		log.Panicln(err)

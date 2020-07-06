@@ -16,6 +16,7 @@ import (
 )
 
 const XPROP_WINDOW_CMD = "xprop -root | grep '_NET_CLIENT_LIST_STACKING(WINDOW)'"
+const FOCUS_WINDOW_ID = "xdotool windowactivate %s"
 const PROCESS_INFO_CMD = "xprop -id %s"
 
 func GetListProcess() ([]model.ProcessConfig, error) {
@@ -37,7 +38,10 @@ func GetListProcess() ([]model.ProcessConfig, error) {
 }
 
 func getProcessInfomation(windowid string) (*model.ProcessConfig, error) {
-	result := model.ProcessConfig{}
+	result := model.ProcessConfig{
+		Wid: windowid,
+	}
+    model.ResetProcess(&result)
 	out, err := exec.Command("bash", "-c", fmt.Sprintf(PROCESS_INFO_CMD, windowid)).Output()
 	if err != nil {
 		log.Fatal(err)
@@ -51,7 +55,7 @@ func getProcessInfomation(windowid string) (*model.ProcessConfig, error) {
 			fParam := strings.Trim(params[0], " ")
 			switch fParam {
 			case "_NET_WM_NAME(UTF8_STRING)":
-				result.Title = strings.ReplaceAll(params[1], "\"", "")
+				result.Title = strings.Trim(strings.ReplaceAll(params[1], "\"", ""), " ")
 				break
 			case "_NET_WM_PID(CARDINAL)":
 				result.Pid, _ = strconv.Atoi(strings.Trim(params[1], " "))
@@ -63,15 +67,35 @@ func getProcessInfomation(windowid string) (*model.ProcessConfig, error) {
 
 }
 
+func FocusWindow(p *model.ProcessConfig) error {
+    wError:=errors.New("window not exist")
+	if len(p.Wid) > 1 {
+		command := fmt.Sprintf(FOCUS_WINDOW_ID, p.Wid)
+		cmd := exec.Command("bash", "-c", command)
+		err := cmd.Start()
+		if err != nil {
+            p.Wid=""
+            return wError
+		}
+		err = cmd.Wait()
+		if err != nil {
+            p.Wid=""
+            return wError
+		}
+		return nil 
+	}
+	return wError 
+}
+
 func SaveJSON(config *model.AppConfig) error {
 	configDir, _ := os.UserHomeDir()
 	path := configDir + "/" + model.DATA_PATH
 	result, err := json.Marshal(config)
 	if err == nil {
-        err:=ioutil.WriteFile(path, result, 0644)
-        if err != nil {
-            return err
-        }
+		err := ioutil.WriteFile(path, result, 0644)
+		if err != nil {
+			return err
+		}
 	} else {
 		return err
 	}
@@ -87,10 +111,9 @@ func LoadJson() (*model.AppConfig, error) {
 	}
 	var config model.AppConfig
 	err = json.Unmarshal(jsonData, &config)
-
 	if err == nil {
 		return &config, nil
 	}
-    os.Remove(path)
+	os.Remove(path)
 	return nil, errors.New("Json error")
 }

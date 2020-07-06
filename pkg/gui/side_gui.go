@@ -12,13 +12,17 @@ import (
 const menu_item_format = "%d %s\n"
 
 const side_width = 30
+const status_height = 2
 
 func DrawSideGUi(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
 	_, maxY := g.Size()
 	if isInit {
-		v, err := g.SetView(model.SIDE_VIEW, 0, 0, side_width, maxY-1)
+		v, err := g.SetView(model.SIDE_VIEW, 0, 0, side_width, maxY-status_height-1)
 		if err != nil {
 			drawSide(g, v, config)
+			if _, err := g.SetCurrentView(model.SIDE_VIEW); err != nil {
+				return err
+			}
 		}
 	} else {
 		v, err := g.View(model.SIDE_VIEW)
@@ -41,6 +45,7 @@ func drawSide(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
 	for i, c := range config.ListProcess {
 		fmt.Fprintf(v, menu_item_format, i+1, c.Name)
 	}
+
 	return nil
 }
 
@@ -63,21 +68,41 @@ func DrawMainGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
 func drawMain(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
 	v.Clear()
 	v.Title = "Main"
-	v.Highlight = false
-	v.Wrap = true
-	fmt.Fprintf(v, "Status : %s ",
-		ColoredStringDirect(config.Status, color.New(color.FgHiGreen, color.BgRed)))
-	fmt.Fprintf(v, "Message : %s", config.Message)
+	status := ColoredStringDirect(config.Status.String(), color.New(color.FgHiGreen, color.BgRed))
+	fmt.Fprintf(v, "Status : %s ", status)
 	if _, err := g.SetCurrentView(model.SIDE_VIEW); err != nil {
 		return err
 	}
 	return nil
 }
 
+func DrawStatusGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
+	maxX, maxY := g.Size()
+	if isInit {
+		v, err := g.SetView(model.STATUS_VIEW, -1, maxY-status_height, maxX, maxY)
+		if err != nil && v != nil {
+			drawStatus(g, v, config)
+		}
+	} else {
+		v, err := g.View(model.STATUS_VIEW)
+		if err == nil {
+			drawStatus(g, v, config)
+		}
+	}
+	return nil
+}
+
+func drawStatus(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
+	v.Clear()
+	status := ColoredStringDirect(config.Status.String(), color.New(color.FgHiGreen, color.BgRed))
+    fmt.Fprintf(v, "Status: %s Message: %s         ,Press H for Help ", status, config.Message)
+	return nil
+}
+
 func DrawProcessGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
 	maxX, maxY := g.Size()
 	if isInit {
-		v, err := g.SetView(model.PROCESS_VIEW, side_width+1, maxY/4, maxX-1, maxY/2-1)
+		v, err := g.SetView(model.PROCESS_VIEW, side_width+1,0, maxX-1, maxY/2-1)
 		if err != nil {
 			drawProcess(g, v, config)
 		}
@@ -90,15 +115,23 @@ func DrawProcessGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
 	}
 	return nil
 }
+
 func drawProcess(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
 	v.Clear()
 	if config.SelectedProcess != nil {
 		v.Title = "Process "
+		v.Wrap = true
 		v.SelBgColor = gocui.ColorGreen
 		v.SelFgColor = gocui.ColorBlack
-		fmt.Fprintf(v, " PID : %d \n", config.SelectedProcess.Pid)
-		fmt.Fprintf(v, " Name : %s \n", config.SelectedProcess.Name)
-		fmt.Fprintf(v, " Title : %s \n", config.SelectedProcess.Title)
+		fmt.Fprintf(v, "PID   : %d \n", config.SelectedProcess.Pid)
+		fmt.Fprintf(v, "WID   : %s \n", config.SelectedProcess.Wid)
+		fmt.Fprintf(v, "Name  : %s \n", SubString(config.SelectedProcess.Name, 50))
+		fmt.Fprintf(v, "Title : %s \n", SubString(config.SelectedProcess.Title, 50))
+		fmt.Fprintf(v, "Time  : %d \n", config.SelectedProcess.Time)
+		fmt.Fprint(v, "Points  : ")
+		for _, p := range config.SelectedProcess.Points {
+			fmt.Fprintf(v, "[%d %d] ,", p.X, p.Y)
+		}
 	}
 	return nil
 }
@@ -106,7 +139,7 @@ func drawProcess(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
 func DrawEditorGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
 	maxX, maxY := g.Size()
 	if isInit {
-		v, err := g.SetView(model.EDITOR_VIEW, side_width+1, maxY/2, maxX-1, maxY-1)
+		v, err := g.SetView(model.EDITOR_VIEW, side_width+1, maxY/2, maxX-1, maxY-status_height-1)
 		if err != nil {
 			drawEditor(g, v, config)
 		}

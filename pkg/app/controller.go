@@ -2,13 +2,13 @@ package app
 
 import (
 	"fmt"
-	"log"
-	"regexp"
-
 	"github.com/jroimartin/gocui"
 	"github.com/windwp/go-at/pkg/command"
 	"github.com/windwp/go-at/pkg/gui"
 	"github.com/windwp/go-at/pkg/model"
+	"log"
+	"regexp"
+	"strconv"
 )
 
 var systemProcess []model.ProcessConfig
@@ -30,26 +30,43 @@ func processMoveDown(g *gocui.Gui, v *gocui.View) error {
 }
 
 func saveVisualData(g *gocui.Gui, v *gocui.View) error {
-    if(config.SelectedProcess!=nil) {
-        config.SelectedProcess.Text="AAAAAAAAAAAA"
-    }
-	// ev, err := g.View(model.EDITOR_VIEW)
-	// if err == nil {
-	// 	vb := ev.ViewBuffer()
-        // config.SelectedProcess.Text = vb
-	// 	return nil
-	// }
+	if config.SelectedProcess != nil {
+		ev, err := g.View(model.EDITOR_VIEW)
+		if err == nil {
+			ev.Rewind()
+			vb := ev.ViewBuffer()
+			config.SelectedProcess.Text = vb
+			return nil
+		}
+	}
+	return nil
+}
+
+func changeTimeAction(g *gocui.Gui, v *gocui.View, text string) error {
+	if config.SelectedProcess != nil {
+		number, err := strconv.Atoi(text)
+		if err == nil {
+			config.SelectedProcess.Time = number
+			gui.DrawProcessGui(g, config, false)
+		}
+
+	}
+	return nil
+}
+
+func showChangeTime(g *gocui.Gui, v *gocui.View) error {
+	gui.ShowInputDialog(g, v, "Change Time", changeTimeAction)
 	return nil
 }
 func refereshGui(g *gocui.Gui) error {
-	gui.DrawSideGUi(g, config, false)
 	gui.DrawMainGui(g, config, false)
+	gui.DrawSideGUi(g, config, false)
 	gui.DrawProcessGui(g, config, false)
 	gui.DrawEditorGui(g, config, false)
+	gui.DrawStatusGui(g, config, false)
 	return nil
 }
 func addProcessAction(g *gocui.Gui, v *gocui.View) error {
-
 	config.ListProcess = append(config.ListProcess)
 	text := gui.GetSelectedText(g, v)
 	var selected *model.ProcessConfig
@@ -78,26 +95,39 @@ func showMenuAddProcess(g *gocui.Gui, v *gocui.View) error {
 	for _, l := range systemProcess {
 		litem = append(litem, l.Title)
 	}
-	gui.ShowMenuDiaLog(g, litem, addProcessAction)
+	gui.ShowMenuDiaLog(g, v, litem, addProcessAction)
 	return nil
 }
 
 func getSelectedProcess(g *gocui.Gui, v *gocui.View) error {
 	text := gui.GetSelectedText(g, v)
-	for _, item := range config.ListProcess {
+	for i, item := range config.ListProcess {
 		if item.Name == text {
-			config.SelectedProcess = &item
-			break
+			config.SelectedProcess = &config.ListProcess[i]
+			return nil
 		}
 	}
 	return nil
 }
 
-func deleteSeletedItem(g *gocui.Gui, v *gocui.View) error {
+func startRunAction(g *gocui.Gui, v *gocui.View) error {
+
+    return nil
+}
+
+func showStartRun(g *gocui.Gui, v *gocui.View) error {
+    gui.ShowDialog(g,v,"Start ?",startRunAction)
+    return nil
+}
+
+func deleteSeletedProcess(g *gocui.Gui, v *gocui.View) error {
 	getSelectedProcess(g, v)
 	if config.SelectedProcess != nil {
 		removeProcess(config.SelectedProcess)
 		refereshGui(g)
+	} else {
+		log.Panic(config.SelectedProcess)
+
 	}
 	return nil
 }
@@ -106,7 +136,7 @@ func showDelProcess(g *gocui.Gui, v *gocui.View) error {
 	text := gui.GetSelectedText(g, v)
 	if text != "" {
 		text = fmt.Sprintf("Delete %s?", text)
-		gui.ShowDialog(g, v, text, deleteSeletedItem)
+		gui.ShowDialog(g, v, text, deleteSeletedProcess)
 	}
 	return nil
 }
@@ -120,6 +150,55 @@ func deleteEditor(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
+func focusWindow(g *gocui.Gui, v *gocui.View) error {
+	if config.SelectedProcess != nil {
+		err := command.FocusWindow(config.SelectedProcess)
+		if err != nil {
+			gui.ShowDialog(g, v, err.Error(), gui.CloseDialog)
+		}
+	}
+	return nil
+}
+func saveDataAction(g *gocui.Gui, v *gocui.View) error {
+	command.SaveJSON(config)
+	SetMessage("Data Saved", g)
+	gui.DrawStatusGui(g, config, false)
+	return nil
+}
+
+func showResetProcessData(g *gocui.Gui, v *gocui.View) error {
+	tmp := func(g *gocui.Gui, v *gocui.View) error {
+		if config.SelectedProcess != nil {
+			model.ResetProcess(config.SelectedProcess)
+		}
+		refereshGui(g)
+		return nil
+	}
+	gui.ShowDialog(g, v, "Reset data", tmp)
+	return nil
+}
+func startHookPoints(g *gocui.Gui, v *gocui.View) error {
+	update := make(chan int)
+	end := make(chan int)
+	err := startHookKeyBoard(update, end)
+	if err != nil {
+		gui.ShowDialog(g, v, err.Error(), gui.CloseDialog)
+		return nil
+	}
+	go func() {
+		for {
+			select {
+			case <-update:
+				refereshGui(g)
+			case <-end:
+				refereshGui(g)
+				return
+			}
+		}
+	}()
+	refereshGui(g)
+	return nil
+}
 func quit(g *gocui.Gui, v *gocui.View) error {
 	command.SaveJSON(config)
 	return gui.Quit(g, v)

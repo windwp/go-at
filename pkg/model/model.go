@@ -7,9 +7,10 @@ import (
 
 // Package main provides ...
 type Point struct {
-	x, y int
+	X, Y int
 }
 type ProcessConfig struct {
+	Wid  string
 	Pid  int
 	Name string
 	// current title of pid
@@ -19,8 +20,33 @@ type ProcessConfig struct {
 	Points []Point
 }
 
+type AppStatus string
+
+const (
+	S_IDLE    AppStatus = "IDLE"
+	S_HOOK    AppStatus = "HOOK"
+	S_RUNNING AppStatus = "RUNNING"
+	S_PAUSE   AppStatus = "PAUSE"
+)
+
+var statusDict = map[AppStatus]string{
+	S_IDLE:    "IDLE",
+	S_HOOK:    "HOOK",
+	S_RUNNING: "RUNNING",
+	S_PAUSE:   "PAUSE",
+}
+
+func (s AppStatus) String() string {
+	a, exist := statusDict[s]
+	if exist {
+		return a 
+	} else {
+		return "Not Valid"
+	}
+}
+
 type AppConfig struct {
-	Status          string
+	Status          AppStatus
 	Message         string
 	ListProcess     []ProcessConfig
 	SelectedProcess *ProcessConfig
@@ -28,15 +54,18 @@ type AppConfig struct {
 
 const SIDE_VIEW = "side"
 const MAIN_VIEW = "main"
+const STATUS_VIEW = "status"
 const PROCESS_VIEW = "process"
 const EDITOR_VIEW = "editor"
 
 const MSG_VIEW = "msg"
+const INPUT_VIEW = "input"
 const MENU_VIEW = "menu"
 
 const DATA_PATH = "data.json"
 
 type DialogHandler func(g *gocui.Gui, v *gocui.View) error
+type InputDialogHandler func(g *gocui.Gui, v *gocui.View, value string) error
 
 type ButtonWidget struct {
 	name    string
@@ -62,3 +91,9 @@ type Binding struct {
 	Description string
 	Alternative string
 }
+
+func ResetProcess(p *ProcessConfig) {
+	p.Points = make([]Point, 0)
+	p.Time = 120
+}
+
