@@ -16,8 +16,8 @@ var menuHandler model.DialogHandler
 var dialogHandler model.DialogHandler
 var inputHandler model.InputDialogHandler
 
-func ShowMenuDiaLog(g *gocui.Gui,v *gocui.View, listItem []string, handler model.DialogHandler) error {
-    lastView=v.Name()
+func ShowMenuDiaLog(g *gocui.Gui, v *gocui.View, listItem []string, handler model.DialogHandler) error {
+	lastView = v.Name()
 	w := 50
 	h := 20
 	maxX, maxY := g.Size()
@@ -38,6 +38,7 @@ func ShowMenuDiaLog(g *gocui.Gui,v *gocui.View, listItem []string, handler model
 			return err
 		}
 	}
+	dialogHandler = handler
 	return nil
 }
 
@@ -131,11 +132,10 @@ func ShowDialog(
 	message string, handler model.DialogHandler,
 ) error {
 	maxX, maxY := g.Size()
-    lastView = v.Name()
+	lastView = v.Name()
 	if v, err := g.SetView(model.MSG_VIEW, maxX/2-20, maxY/2-5, maxX/2+20, maxY/2); err != nil {
 		v.Title = "Dialog"
 		if err != gocui.ErrUnknownView {
-			log.Panic("stupi")
 			return err
 		}
 		fmt.Fprintln(v, message)
@@ -153,11 +153,24 @@ func ShowDialog(
 		}
 		dialogHandler = handler
 	}
-
 	return nil
 }
 
+
+func MoveByKey(number int) model.DialogHandler {
+	return func(g *gocui.Gui, v *gocui.View) error {
+        if v != nil {
+            cx, _ := v.Cursor()
+            n, _ := v.Line(number)
+            if n != "" {
+                v.SetCursor(cx, number);
+            }
+        }
+        return nil
+	}
+}
 func Quit(g *gocui.Gui, v *gocui.View) error {
+
 	return gocui.ErrQuit
 }
 
@@ -213,6 +226,7 @@ func SetCursorLine(g *gocui.Gui, viewName string, index int) error {
 	}
 	return nil
 }
+
 // ColoredString takes a string and a colour attribute and returns a colored
 // string with that attribute
 func ColoredString(str string, colorAttributes ...color.Attribute) string {

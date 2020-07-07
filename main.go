@@ -9,9 +9,8 @@ import (
 	"log"
 	"os"
 
-
 	// "github.com/nsf/termbox-go"
-    "github.com/go-vgo/robotgo"
+	"github.com/go-vgo/robotgo"
 	"github.com/jroimartin/gocui"
 	"github.com/windwp/go-at/pkg/app"
 	"github.com/windwp/go-at/pkg/command"
@@ -27,19 +26,18 @@ func layout(g *gocui.Gui) error {
 	gui.SetUpGui(g, config)
 	return nil
 }
-func onKill(){
-    c := make(chan os.Signal)
-    log.Println("OnKill")
-	signal.Notify(c, os.Kill, syscall.SIGTERM)
+func onKill() {
+	c := make(chan os.Signal)
+	log.Println("OnKill")
+	signal.Notify(c, syscall.SIGUSR1)
 	go func() {
 		<-c
-		log.Println("\r- Ctrl+C pressed in Terminal")
-        saveAppData()
-		os.Exit(0)
+		log.Println("Stop task")
+		go command.EndTask()
 	}()
 }
-func saveAppData(){
-    command.SaveJSON(config)
+func saveAppData() {
+	command.SaveJSON(config)
 }
 
 func main() {
@@ -48,17 +46,19 @@ func main() {
 		fmt.Println("file log not exist")
 	}
 	defer f.Close()
-    defer saveAppData()
+	defer saveAppData()
 	log.SetOutput(f)
-	log.Println("Start ==")
-    onKill()
 	g, err := gocui.NewGui(gocui.OutputNormal)
 	config = app.Setup()
-    robotgo.GetMousePos()
+	robotgo.GetMousePos()
+	robotgo.TypeStr("")
+	onKill()
+	command.CLICK_TIME_DURATION = 8
+	command.SLEEP_TASK_MILISECOND = 300
 	g.Cursor = true
 	g.Highlight = true
 	g.SelFgColor = gocui.ColorRed
-    g.InputEsc=true
+	g.InputEsc = true
 	if err != nil {
 		g.Close()
 		log.Panicln(err)

@@ -94,15 +94,16 @@ func DrawStatusGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
 
 func drawStatus(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
 	v.Clear()
+    helpMessgage:="Press H for Help."
 	status := ColoredStringDirect(config.Status.String(), color.New(color.FgHiGreen, color.BgRed))
-    fmt.Fprintf(v, "Status: %s Message: %s         ,Press H for Help ", status, config.Message)
+	fmt.Fprintf(v, "Status: %s Message: %s         %s", status, config.Message,helpMessgage)
 	return nil
 }
 
 func DrawProcessGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
 	maxX, maxY := g.Size()
 	if isInit {
-		v, err := g.SetView(model.PROCESS_VIEW, side_width+1,0, maxX-1, maxY/2-1)
+		v, err := g.SetView(model.PROCESS_VIEW, side_width+1, 0, maxX-1, maxY/2-1)
 		if err != nil {
 			drawProcess(g, v, config)
 		}
@@ -151,17 +152,17 @@ func DrawEditorGui(g *gocui.Gui, config *model.AppConfig, isInit bool) error {
 	}
 	return nil
 }
-func drawEditor(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
 
+
+func drawEditor(g *gocui.Gui, v *gocui.View, config *model.AppConfig) error {
 	v.Clear()
 	v.Editable = true
 	v.Wrap = true
 	if config.SelectedProcess != nil {
-		v.Title = "Text "
+		v.Title = "Editor"
 		v.SelBgColor = gocui.ColorGreen
 		v.SelFgColor = gocui.ColorBlack
-
-		fmt.Fprintf(v, "%s \n", config.SelectedProcess.Text)
+		fmt.Fprint(v, config.SelectedProcess.Text)
 		if len(config.SelectedProcess.Text) == 0 {
 			v.SetCursor(0, 0)
 		}

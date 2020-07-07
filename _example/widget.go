@@ -3,55 +3,60 @@ package main
 import (
 	"fmt"
 
-  "github.com/go-vgo/robotgo"
-  hook "github.com/robotn/gohook"
+	hook "github.com/robotn/gohook"
 )
 
-func main() {
-  add()
-  // low()
-  // event()
+func addEvent() {
+	fmt.Println("--- Please press ctrl + shift + q to stop hook ---")
+	hook.Register(hook.KeyDown, []string{"q", "ctrl", "shift"}, func(e hook.Event) {
+		fmt.Println("ctrl-shift-q")
+		hook.End()
+	})
+
+	fmt.Println("--- Please press w---")
+	hook.Register(hook.KeyDown, []string{"w"}, func(e hook.Event) {
+		fmt.Println("w")
+	})
+
+	s := hook.Start()
+	<-hook.Process(s)
 }
 
+// hook listen and return values using detailed examples
 func add() {
-  fmt.Println("--- Please press ctrl + shift + q to stop hook ---")
-  robotgo.EventHook(hook.KeyDown, []string{"q", "ctrl", "shift"}, func(e hook.Event) {
-    fmt.Println("ctrl-shift-q")
-    robotgo.EventEnd()
-  })
-
-  fmt.Println("--- Please press w---")
-  robotgo.EventHook(hook.KeyDown, []string{"w"}, func(e hook.Event) {
-    x,y:=robotgo.GetMousePos()
-    fmt.Printf("%d %d",x,y)
-  })
-
-  s := robotgo.EventStart()
-  <-robotgo.EventProcess(s)
-}
-
-func low() {
-	EvChan := hook.Start()
+	fmt.Println("hook add...")
+	s := hook.Start()
 	defer hook.End()
 
-	for ev := range EvChan {
+	ct := false
+	for {
+		i := <-s
+
+		if i.Kind == hook.KeyHold && i.Rawcode == 59 {
+			ct = true
+		}
+
+		if ct && i.Rawcode == 12 {
+			break
+		}
+	}
+}
+
+// base hook example
+func base() {
+	fmt.Println("hook start...")
+	evChan := hook.Start()
+	defer hook.End()
+
+	for ev := range evChan {
 		fmt.Println("hook: ", ev)
 	}
 }
 
-func event() {
-  ok := robotgo.AddEvents("q", "ctrl", "shift")
-  if ok {
-    fmt.Println("add events...")
-  }
+func main() {
+	addEvent()
 
-  keve := robotgo.AddEvent("k")
-  if keve {
-    fmt.Println("you press... ", "k")
-  }
+	base()
 
-  mleft := robotgo.AddEvent("mleft")
-  if mleft {
-    fmt.Println("you press... ", "mouse left button")
-  }
+	add()
 }

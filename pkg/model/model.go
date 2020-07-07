@@ -14,10 +14,12 @@ type ProcessConfig struct {
 	Pid  int
 	Name string
 	// current title of pid
-	Title  string
-	Time   int
-	Text   string
-	Points []Point
+	Title      string
+	Time       int
+	Text       string
+	Points     []Point
+	PointIndex int
+	TextIndex  int
 }
 
 type AppStatus string
@@ -39,7 +41,7 @@ var statusDict = map[AppStatus]string{
 func (s AppStatus) String() string {
 	a, exist := statusDict[s]
 	if exist {
-		return a 
+		return a
 	} else {
 		return "Not Valid"
 	}
@@ -96,4 +98,3 @@ func ResetProcess(p *ProcessConfig) {
 	p.Points = make([]Point, 0)
 	p.Time = 120
 }
-

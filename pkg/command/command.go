@@ -41,7 +41,7 @@ func getProcessInfomation(windowid string) (*model.ProcessConfig, error) {
 	result := model.ProcessConfig{
 		Wid: windowid,
 	}
-    model.ResetProcess(&result)
+	model.ResetProcess(&result)
 	out, err := exec.Command("bash", "-c", fmt.Sprintf(PROCESS_INFO_CMD, windowid)).Output()
 	if err != nil {
 		log.Fatal(err)
@@ -68,23 +68,23 @@ func getProcessInfomation(windowid string) (*model.ProcessConfig, error) {
 }
 
 func FocusWindow(p *model.ProcessConfig) error {
-    wError:=errors.New("window not exist")
+	wError := errors.New("window not exist")
 	if len(p.Wid) > 1 {
 		command := fmt.Sprintf(FOCUS_WINDOW_ID, p.Wid)
 		cmd := exec.Command("bash", "-c", command)
 		err := cmd.Start()
 		if err != nil {
-            p.Wid=""
-            return wError
+			p.Wid = ""
+			return wError
 		}
 		err = cmd.Wait()
 		if err != nil {
-            p.Wid=""
-            return wError
+			p.Wid = ""
+			return wError
 		}
-		return nil 
+		return nil
 	}
-	return wError 
+	return wError
 }
 
 func SaveJSON(config *model.AppConfig) error {
@@ -107,13 +107,12 @@ func LoadJson() (*model.AppConfig, error) {
 	path := configDir + "/" + model.DATA_PATH
 	jsonData, err := ioutil.ReadFile(path)
 	if err != nil {
-		return nil, nil
+		return nil, errors.New("File data error")
 	}
 	var config model.AppConfig
 	err = json.Unmarshal(jsonData, &config)
-	if err == nil {
-		return &config, nil
+	if err != nil {
+		return nil, errors.New("Json error")
 	}
-	os.Remove(path)
-	return nil, errors.New("Json error")
+	return &config, nil
 }

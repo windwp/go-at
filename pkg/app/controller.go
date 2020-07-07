@@ -2,13 +2,16 @@ package app
 
 import (
 	"fmt"
+	"log"
+	"regexp"
+	"strconv"
+	"strings"
+
+	"github.com/go-vgo/robotgo"
 	"github.com/jroimartin/gocui"
 	"github.com/windwp/go-at/pkg/command"
 	"github.com/windwp/go-at/pkg/gui"
 	"github.com/windwp/go-at/pkg/model"
-	"log"
-	"regexp"
-	"strconv"
 )
 
 var systemProcess []model.ProcessConfig
@@ -29,16 +32,58 @@ func processMoveDown(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
+func nextView(g *gocui.Gui, v *gocui.View) error {
+	saveVisualData(g, v)
+	return gui.NextView(g, v)
+}
 func saveVisualData(g *gocui.Gui, v *gocui.View) error {
 	if config.SelectedProcess != nil {
 		ev, err := g.View(model.EDITOR_VIEW)
 		if err == nil {
 			ev.Rewind()
 			vb := ev.ViewBuffer()
+			vb = strings.Trim(vb, "\n")
+			vb = strings.Trim(vb, " ")
 			config.SelectedProcess.Text = vb
 			return nil
 		}
 	}
+	return nil
+}
+func getSysemSelectProcess(g *gocui.Gui, v *gocui.View) *model.ProcessConfig {
+	text := gui.GetSelectedText(g, v)
+	var selected *model.ProcessConfig
+	for _, item := range systemProcess {
+		re := regexp.MustCompile(`^\d*\ \-\ `)
+		text = re.ReplaceAllString(text, "")
+		if item.Title == text {
+			selected = &item
+			break
+		}
+	}
+	return selected
+}
+func changeProcessAction(g *gocui.Gui, v *gocui.View) error {
+	selected := getSysemSelectProcess(g, v)
+	gui.CloseMenuDialog(g, v)
+	if selected != nil {
+		selected.Name = selected.Title
+		config.SelectedProcess.Pid = selected.Pid
+		config.SelectedProcess.Wid = selected.Wid
+		config.SelectedProcess.Name = selected.Name
+		config.SelectedProcess.Title = selected.Title
+		refereshGui(g)
+	}
+	return nil
+}
+
+func showChangeWindowID(g *gocui.Gui, v *gocui.View) error {
+	systemProcess, _ = command.GetListProcess()
+	litem := make([]string, 0)
+	for _, l := range systemProcess {
+		litem = append(litem, l.Title)
+	}
+	gui.ShowMenuDiaLog(g, v, litem, changeProcessAction)
 	return nil
 }
 
@@ -67,17 +112,7 @@ func refereshGui(g *gocui.Gui) error {
 	return nil
 }
 func addProcessAction(g *gocui.Gui, v *gocui.View) error {
-	config.ListProcess = append(config.ListProcess)
-	text := gui.GetSelectedText(g, v)
-	var selected *model.ProcessConfig
-	for _, item := range systemProcess {
-		re := regexp.MustCompile(`^\d*\ \-\ `)
-		text = re.ReplaceAllString(text, "")
-		if item.Title == text {
-			selected = &item
-			break
-		}
-	}
+	selected := getSysemSelectProcess(g, v)
 	gui.CloseMenuDialog(g, v)
 	if selected != nil {
 		selected.Name = selected.Title
@@ -110,16 +145,62 @@ func getSelectedProcess(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
+func onEndTask(g *gocui.Gui, v *gocui.View) error{
+    <-command.WaitTask()
+    stopRunAction(g,v)
+    return nil
+}
 func startRunAction(g *gocui.Gui, v *gocui.View) error {
-
-    return nil
+	if config.Status == model.S_IDLE {
+		err := command.StartTask(config, false)
+		if err != nil {
+			SetMessage(err.Error(), g)
+			return err
+		}
+        go onEndTask(g,v)
+		config.Status = model.S_RUNNING
+		refereshGui(g)
+	}
+	return nil
 }
 
+func stopRunAction(g *gocui.Gui, v *gocui.View) error {
+	if config.Status == model.S_RUNNING {
+        command.EndTask()
+        config.Status = model.S_IDLE
+        SetMessage("stop", g)
+	}
+	return nil
+}
 func showStartRun(g *gocui.Gui, v *gocui.View) error {
-    gui.ShowDialog(g,v,"Start ?",startRunAction)
-    return nil
+	if config.Status == model.S_IDLE {
+		saveVisualData(g, v)
+		gui.ShowDialog(g, v, "Start ?", startRunAction)
+	} else {
+		gui.ShowDialog(g, v, "Can't start Now", gui.CloseDialog)
+	}
+	return nil
 }
 
+func clipboardData(g *gocui.Gui, v *gocui.View) error {
+	clipboard, err := robotgo.ReadAll()
+	if err == nil {
+		config.SelectedProcess.Text = clipboard
+		refereshGui(g)
+	} else {
+
+		log.Panic("Clip board error")
+	}
+	return nil
+}
+func showStopAction(g *gocui.Gui, v *gocui.View) error {
+	if config.Status == model.S_RUNNING {
+		gui.ShowDialog(g, v, "Stop? ", stopRunAction)
+	} else {
+		gui.ShowDialog(g, v, "Can't start Now", gui.CloseDialog)
+	}
+	return nil
+}
 func deleteSeletedProcess(g *gocui.Gui, v *gocui.View) error {
 	getSelectedProcess(g, v)
 	if config.SelectedProcess != nil {

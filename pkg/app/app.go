@@ -72,14 +72,15 @@ func removeProcess(p *model.ProcessConfig) int {
 	return 0
 }
 
-func SetMessage(message string,g *gocui.Gui) {
+func SetMessage(message string, g *gocui.Gui) {
 	config.Message = message
 	go func() {
 		time.Sleep(3 * time.Second)
 		config.Message = ""
-        refereshGui(g)
+		refereshGui(g)
 	}()
-    
+	refereshGui(g)
+
 }
 func addPoint(p *model.ProcessConfig, x, y int) {
 	if p == nil {
@@ -123,7 +124,6 @@ func startHookKeyBoard(update, end chan int) error {
 		}(update, end)
 		config.Status = model.S_HOOK
 		return nil
-	} else {
-		return errors.New("Server is running")
 	}
+	return errors.New("Server is running")
 }

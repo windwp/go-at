@@ -10,4 +10,5 @@ require (
 	github.com/nsf/termbox-go v0.0.0-20200418040025-38ba6e5628f1 // indirect
 	github.com/robotn/gohook v0.30.3
 	github.com/thoas/go-funk v0.7.0
+	golang.org/x/text v0.3.0
 )
