@@ -2,15 +2,14 @@
 
 Small Cli Gui tool for automatic
 
-
-##usage 
+## Usage 
 
 * [gocui](https://github.com/jroimartin/gocui/)
 * [robotgo](https://github.com/go-vgo/robotgo)
-##Install
+
+## Install
 robotgo docs 
 [Check install of robotgo](https://github.com/go-vgo/robotgo#docs)
-
 
 ## Inspired
 * [lazygit](https://github.com/jesseduffield/lazygit/)
