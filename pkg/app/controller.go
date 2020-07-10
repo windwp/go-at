@@ -8,17 +8,16 @@ import (
 	"strings"
 
 	"github.com/go-vgo/robotgo"
+	"github.com/jinzhu/copier"
 	"github.com/jroimartin/gocui"
 	"github.com/windwp/go-at/pkg/command"
 	"github.com/windwp/go-at/pkg/gui"
 	"github.com/windwp/go-at/pkg/model"
-"github.com/jinzhu/copier"
 )
 
 var systemProcess []model.ProcessConfig
 
 func processMoveUp(g *gocui.Gui, v *gocui.View) error {
-	// saveVisualData(g, v)
 	gui.CursorUp(g, v)
 	getSelectedProcess(g, v)
 	refereshGui(g)
@@ -26,7 +25,6 @@ func processMoveUp(g *gocui.Gui, v *gocui.View) error {
 }
 
 func processMoveDown(g *gocui.Gui, v *gocui.View) error {
-	// saveVisualData(g, v)
 	gui.CursorDown(g, v)
 	getSelectedProcess(g, v)
 	refereshGui(g)
@@ -34,7 +32,6 @@ func processMoveDown(g *gocui.Gui, v *gocui.View) error {
 }
 
 func nextView(g *gocui.Gui, v *gocui.View) error {
-	// saveVisualData(g, v)
 	return gui.NextView(g, v)
 }
 
@@ -147,22 +144,22 @@ func getSelectedProcess(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 
-func onEndTask(g *gocui.Gui, v *gocui.View) error{
-    <-command.WaitTask()
-    stopRunAction(g,v)
-    return nil
+func onEndTask(g *gocui.Gui, v *gocui.View) error {
+	<-command.WaitTask()
+	stopRunAction(g, v)
+	return nil
 }
 func startRunAction(g *gocui.Gui, v *gocui.View) error {
 	if config.Status == model.S_IDLE {
-        // clone:=&
-        clone:=&model.AppConfig{}
-        copier.Copy(clone, config)
+		// clone:=&
+		clone := &model.AppConfig{}
+		copier.Copy(clone, config)
 		err := command.StartTask(clone, false)
 		if err != nil {
 			SetMessage(err.Error(), g)
 			return err
 		}
-        go onEndTask(g,v)
+		go onEndTask(g, v)
 		config.Status = model.S_RUNNING
 		refereshGui(g)
 	}
@@ -171,9 +168,9 @@ func startRunAction(g *gocui.Gui, v *gocui.View) error {
 
 func stopRunAction(g *gocui.Gui, v *gocui.View) error {
 	if config.Status == model.S_RUNNING {
-        command.EndTask()
-        config.Status = model.S_IDLE
-        SetMessage("stop", g)
+		command.EndTask()
+		config.Status = model.S_IDLE
+		SetMessage("stop", g)
 	}
 	return nil
 }
@@ -191,7 +188,7 @@ func clipboardData(g *gocui.Gui, v *gocui.View) error {
 	if err == nil {
 		config.SelectedProcess.Text = clipboard
 		refereshGui(g)
-        // saveTextEditorData(g,v)
+		// saveTextEditorData(g,v)
 	} else {
 
 		log.Panic("Clip board error")
@@ -245,8 +242,8 @@ func focusWindow(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 func saveDataAction(g *gocui.Gui, v *gocui.View) error {
-    clone:=&model.AppConfig{}
-    copier.Copy(clone,config)
+	clone := &model.AppConfig{}
+	copier.Copy(clone, config)
 	command.SaveJSON(config)
 	SetMessage("Data Saved", g)
 	gui.DrawStatusGui(g, config, false)
