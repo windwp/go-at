@@ -37,7 +37,7 @@ var CLICK_TIME_DURATION = 5
 
 // time sleep milisecond on task thread
 var SLEEP_TASK_MILISECOND = 500
-var KEYPRESS_AFTER_MOUSE_CLICK = []string{"num-", "alt"}
+var KEYPRESS_AFTER_MOUSE_CLICK = []string{"b", "alt"}
 var KEYPRESS_STOP_GLOBAL_HOOK = []string{"q", "ctrl", "shift"}
 var endEvent = make(chan int)
 var startChan = make(chan int)
@@ -97,6 +97,8 @@ func doTask(p *model.ProcessConfig, pIndex, pointIndex, textIndex int, isClick b
 			KEYPRESS_AFTER_MOUSE_CLICK[0],
 			KEYPRESS_AFTER_MOUSE_CLICK[1],
 		)
+   		time.Sleep(time.Duration(SLEEP_TASK_MILISECOND) * time.Millisecond)
+
 	}
 	return pointIndex, textIndex
 }

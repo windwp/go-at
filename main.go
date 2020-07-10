@@ -54,7 +54,7 @@ func main() {
 	robotgo.TypeStr("")
 	onKill()
 	command.CLICK_TIME_DURATION = 8
-	command.SLEEP_TASK_MILISECOND = 300
+	command.SLEEP_TASK_MILISECOND = 400
 	g.Cursor = true
 	g.Highlight = true
 	g.SelFgColor = gocui.ColorRed

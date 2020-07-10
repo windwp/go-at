@@ -12,12 +12,13 @@ import (
 	"github.com/windwp/go-at/pkg/command"
 	"github.com/windwp/go-at/pkg/gui"
 	"github.com/windwp/go-at/pkg/model"
+"github.com/jinzhu/copier"
 )
 
 var systemProcess []model.ProcessConfig
 
 func processMoveUp(g *gocui.Gui, v *gocui.View) error {
-	saveVisualData(g, v)
+	// saveVisualData(g, v)
 	gui.CursorUp(g, v)
 	getSelectedProcess(g, v)
 	refereshGui(g)
@@ -25,7 +26,7 @@ func processMoveUp(g *gocui.Gui, v *gocui.View) error {
 }
 
 func processMoveDown(g *gocui.Gui, v *gocui.View) error {
-	saveVisualData(g, v)
+	// saveVisualData(g, v)
 	gui.CursorDown(g, v)
 	getSelectedProcess(g, v)
 	refereshGui(g)
@@ -33,10 +34,11 @@ func processMoveDown(g *gocui.Gui, v *gocui.View) error {
 }
 
 func nextView(g *gocui.Gui, v *gocui.View) error {
-	saveVisualData(g, v)
+	// saveVisualData(g, v)
 	return gui.NextView(g, v)
 }
-func saveVisualData(g *gocui.Gui, v *gocui.View) error {
+
+func saveTextEditorData(g *gocui.Gui, v *gocui.View) error {
 	if config.SelectedProcess != nil {
 		ev, err := g.View(model.EDITOR_VIEW)
 		if err == nil {
@@ -152,7 +154,10 @@ func onEndTask(g *gocui.Gui, v *gocui.View) error{
 }
 func startRunAction(g *gocui.Gui, v *gocui.View) error {
 	if config.Status == model.S_IDLE {
-		err := command.StartTask(config, false)
+        // clone:=&
+        clone:=&model.AppConfig{}
+        copier.Copy(clone, config)
+		err := command.StartTask(clone, false)
 		if err != nil {
 			SetMessage(err.Error(), g)
 			return err
@@ -174,7 +179,6 @@ func stopRunAction(g *gocui.Gui, v *gocui.View) error {
 }
 func showStartRun(g *gocui.Gui, v *gocui.View) error {
 	if config.Status == model.S_IDLE {
-		saveVisualData(g, v)
 		gui.ShowDialog(g, v, "Start ?", startRunAction)
 	} else {
 		gui.ShowDialog(g, v, "Can't start Now", gui.CloseDialog)
@@ -187,6 +191,7 @@ func clipboardData(g *gocui.Gui, v *gocui.View) error {
 	if err == nil {
 		config.SelectedProcess.Text = clipboard
 		refereshGui(g)
+        // saveTextEditorData(g,v)
 	} else {
 
 		log.Panic("Clip board error")
@@ -223,7 +228,6 @@ func showDelProcess(g *gocui.Gui, v *gocui.View) error {
 }
 
 func deleteEditor(g *gocui.Gui, v *gocui.View) error {
-	log.Println("aasdas")
 	if config.SelectedProcess != nil {
 		config.SelectedProcess.Text = ""
 		gui.DrawEditorGui(g, config, false)
@@ -241,6 +245,8 @@ func focusWindow(g *gocui.Gui, v *gocui.View) error {
 	return nil
 }
 func saveDataAction(g *gocui.Gui, v *gocui.View) error {
+    clone:=&model.AppConfig{}
+    copier.Copy(clone,config)
 	command.SaveJSON(config)
 	SetMessage("Data Saved", g)
 	gui.DrawStatusGui(g, config, false)

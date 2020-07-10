@@ -33,7 +33,7 @@ func NextView(g *gocui.Gui, v *gocui.View) error {
 	// 	cV = model.PROCESS_VIEW
 	// 	break
 	case model.PROCESS_VIEW:
-		cV = model.EDITOR_VIEW
+		cV = model.SIDE_VIEW
 		break
 	case model.EDITOR_VIEW:
 		cV = model.SIDE_VIEW

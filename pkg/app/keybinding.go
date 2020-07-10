@@ -77,7 +77,7 @@ func Keybindings(g *gocui.Gui) error {
 			Modifier:    gocui.ModNone,
 			Key:         'f',
 			Handler:     focusWindow,
-			Description: "Focus on process Window",
+			Description: "Focus on target Window",
 		},
 		{
 			ViewName:    model.SIDE_VIEW,
@@ -112,6 +112,29 @@ func Keybindings(g *gocui.Gui) error {
 			Key:         'H',
 			Handler:     showHelp,
 			Description: "Show Help",
+		},
+
+		{
+			ViewName:    model.SIDE_VIEW,
+			Modifier:    gocui.ModNone,
+			Key:         gocui.KeyCtrlB,
+			Handler:     gui.FocusView(model.EDITOR_VIEW),
+			Description: "Editor - Focus editor panel",
+		},
+		{
+			ViewName:    model.SIDE_VIEW,
+			Modifier:    gocui.ModNone,
+			Key:         gocui.KeyCtrlA,
+			Handler:     clipboardData,
+			Description: "Editor - Get data from clipboard",
+		},
+
+		{
+			ViewName:    model.SIDE_VIEW,
+			Modifier:    gocui.ModNone,
+			Key:         gocui.KeyCtrlSpace,
+			Handler:     deleteEditor,
+			Description: "Editor Clear Editor",
 		},
 		{
 			ViewName:    model.PROCESS_VIEW,
@@ -266,24 +289,11 @@ func Keybindings(g *gocui.Gui) error {
 		{
 			ViewName:    model.EDITOR_VIEW,
 			Modifier:    gocui.ModNone,
-			Key:         gocui.KeyCtrlSpace,
-			Handler:     deleteEditor,
-			Description: "Editor Clear Editor",
-		},
-		{
-			ViewName:    model.EDITOR_VIEW,
-			Modifier:    gocui.ModNone,
 			Key:         gocui.KeyCtrlB,
 			Handler:     nextView,
-			Description: "Editor - Focus process list",
+			Description: "Editor - Focus side panel",
 		},
-		{
-			ViewName:    model.EDITOR_VIEW,
-			Modifier:    gocui.ModNone,
-			Key:         gocui.KeyCtrlA,
-			Handler:     clipboardData,
-			Description: "Editor - Get data from clipboard",
-		},
+
 		{
 			ViewName:    model.EDITOR_VIEW,
 			Modifier:    gocui.ModNone,
@@ -474,7 +484,7 @@ func showHelp(g *gocui.Gui, v *gocui.View) error {
 	listHelpKey := make([]string, 0)
 	for _, b := range bindings {
 		if b.ViewName != "" && (b.ViewName == viewName || b.ViewName == model.EDITOR_VIEW) {
-			listHelpKey = append(listHelpKey, fmt.Sprintf("%s %s", GetKeyDisplay(b.Key), b.Description))
+			listHelpKey = append(listHelpKey, fmt.Sprintf("[%s] - %s", GetKeyDisplay(b.Key), b.Description))
 		}
 	}
 	gui.ShowMenuDiaLog(g, v, listHelpKey, gui.CloseDialog)
